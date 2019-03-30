@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { statSync, readFileSync, writeFileSync, readdirSync, unlinkSync } from 'fs';
-import { relative, basename, sep as pathSeperator } from 'path';
+import { relative, basename, sep as pathSeperator, extname } from 'path';
 import hasha from 'hasha';
 // import cheerio from 'cheerio';
 const cheerio = require('cheerio');
@@ -26,7 +26,7 @@ function isURL(url) {
 }
 
 export default (opt = {}) => {
-	const { template, filename, externals, inject, defaultmode } = opt;
+	const { template, filename, externals, inject, bust, defaultmode } = opt;
 	const prefix = opt.prefix || ''
 
 	return {
@@ -40,7 +40,6 @@ export default (opt = {}) => {
 			// relative('./', dest) will not be equal to dest when dest is a absolute path
 			const destPath = relative('./', file);
 			const firstDir = destPath.slice(0, destPath.indexOf(pathSeperator));
-			const destFile = `${firstDir}/${filename || basename(template)}`;
 
 			traverse(firstDir, fileList);
 
@@ -74,13 +73,13 @@ export default (opt = {}) => {
 					writeFileSync(file, code);
 				}
 
-				const src = prefix + isURL(file) ? file : relative(firstDir, file);
+				const src = prefix + (isURL(file) ? file : relative(firstDir, file));
 
 				if (type === 'js') {
 					let attrs = { src: src };
 					let mode = node.mode || defaultmode;
 					if (mode) attrs.type = mode;
-					attrs = Object.entries(([key, val]) => `${key}="${val}"`).join(' ');
+					attrs = Object.entries(attrs).map(a => `${a[0]}="${a[1]}"`).join(' ');
 					const script = `<script ${attrs}></script>\n`;
 					// node.inject will cover the inject
 					if (node.inject === 'head' || inject === 'head') {
@@ -92,7 +91,18 @@ export default (opt = {}) => {
 					head.append(`<link rel="stylesheet" href="${src}">\n`);
 				}
 			});
-			writeFileSync(destFile, $.html());
+			if (bust == true) {
+				const _html = $.html()
+				const _hash = hasha(_html, { algorithm: 'md5' });
+				const _filename = filename || basename(template)
+				const ext = extname(_filename)
+				const name = basename(_filename, ext)
+				const destFile = `${firstDir}/${name}.${_hash}${ext}`;
+				writeFileSync(destFile, $.html());
+			} else {
+				const destFile = `${firstDir}/${filename || basename(template)}`;
+				writeFileSync(destFile, $.html());
+			}
 		}
 	};
 }
