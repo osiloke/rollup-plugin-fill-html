@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { statSync, readFileSync, writeFileSync, readdirSync, unlinkSync } from 'fs';
 import { relative, basename, sep as pathSeperator } from 'path';
 import hasha from 'hasha';
@@ -20,12 +21,13 @@ function traverse(dir, list) {
 	});
 }
 
-function isURL(url){
-  return /^(((https|http|ftp|rtsp|mms):)?\/\/)+[A-Za-z0-9]+\.[A-Za-z0-9]+[\/=\?%\-&_~`@[\]\':+!]*([^<>\"\"])*$/.test(url);
+function isURL(url) {
+	return /^(((https|http|ftp|rtsp|mms):)?\/\/)+[A-Za-z0-9]+\.[A-Za-z0-9]+[\/=\?%\-&_~`@[\]\':+!]*([^<>\"\"])*$/.test(url);
 }
 
 export default (opt = {}) => {
 	const { template, filename, externals, inject, defaultmode } = opt;
+	const prefix = opt.prefix || ''
 
 	return {
 		name: 'html',
@@ -44,7 +46,7 @@ export default (opt = {}) => {
 
 			if (Array.isArray(externals)) {
 				let firstBundle = 0;
-				externals.forEach(function(node) {
+				externals.forEach(function (node) {
 					if (node.pos === 'before') {
 						fileList.splice(firstBundle++, 0, node);
 					} else {
@@ -72,10 +74,10 @@ export default (opt = {}) => {
 					writeFileSync(file, code);
 				}
 
-				const src = isURL(file) ? file : relative(firstDir, file);
+				const src = prefix + isURL(file) ? file : relative(firstDir, file);
 
 				if (type === 'js') {
-					let attrs = {src: src};
+					let attrs = { src: src };
 					let mode = node.mode || defaultmode;
 					if (mode) attrs.type = mode;
 					attrs = Object.entries(([key, val]) => `${key}="${val}"`).join(' ');
