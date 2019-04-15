@@ -79,7 +79,7 @@ export default (opt = {}) => {
 					let attrs = { src: src };
 					let mode = node.mode || defaultmode;
 					if (mode) attrs.type = mode;
-					attrs = Object.entries(attrs).map(a => `${a[0]}="${a[1]}"`).join(' ');
+					attrs = Object.entries(attrs).map(([key, val]) => `${key}="${val}"`).join(' ');
 					const script = `<script ${attrs}></script>\n`;
 					// node.inject will cover the inject
 					if (node.inject === 'head' || inject === 'head') {
